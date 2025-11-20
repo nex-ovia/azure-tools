@@ -32,10 +32,52 @@ az role assignment create \
   --role "Contributor" \
   --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP_NAME"
 
-
-
 # Verify the role assignment
 az role assignment list \                                                               
   --assignee "$TARGET_USER" \
   --scope "/subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP_NAME" \
   --output table
+
+# Command to get the object id of a User
+az ad user show \                                                                        
+  --id "$TARGET_USER" \
+  --query "id" -o tsv
+
+# Command to get the object id of a Managed Identity from Logic App
+az resource show \
+  --resource-group $RESOURCE_GROUP_NAME \
+  --name "$LOGICAPP_NAME" \
+  --resource-type "Microsoft.Logic/workflows" \
+  --query "identity.principalId" \
+  -o tsv
+
+# Command to give Key Vault access policy to the managed identity for secret get and list permissions
+az keyvault set-policy \                                                              
+  --name "$KEYVAULT_NAME" \
+  --object-id "$TARGET_OBJECT_ID" \
+  --secret-permissions get list
+
+# Command to give Key Vault access policy to the managed identity for certificate get and list permissions
+az keyvault set-policy \                                                              
+  --name "$KEYVAULT_NAME" \
+  --object-id "$TARGET_OBJECT_ID" \
+  --certificate-permissions get list  
+
+# Command to give Key Vault access policy to the managed identity for key get and list permissions
+az keyvault set-policy \                                                              
+  --name "$KEYVAULT_NAME" \
+  --object-id "$TARGET_OBJECT_ID" \
+  --key-permissions get list
+
+# Verify the Key Vault access policy
+az keyvault show \
+  --name "$KEYVAULT_NAME" \
+  --query "properties.accessPolicies[?objectId=='$TARGET_OBJECT_ID']"
+
+az resource list \
+  --query "[?identity.principalId=='$TARGET_OBJECT_ID'].{name:name,type:type,resourceGroup:resourceGroup}"
+
+  az keyvault show \
+  --name "$KEYVAULT_NAME" \
+  --query "properties.accessPolicies"
+

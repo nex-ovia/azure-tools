@@ -77,7 +77,17 @@ az keyvault show \
 az resource list \
   --query "[?identity.principalId=='$TARGET_OBJECT_ID'].{name:name,type:type,resourceGroup:resourceGroup}"
 
-  az keyvault show \
+az keyvault show \
   --name "$KEYVAULT_NAME" \
   --query "properties.accessPolicies"
 
+# Get the list of key vaults in the resource group
+az keyvault list \
+  --resource-group "$RESOURCE_GROUP_NAME" \
+  --query "[].{name:name}" \
+  -o table
+
+az keyvault list \
+  --resource-group "$RESOURCE_GROUP_NAME" \
+  --query "[].{name:name, location:location, sku:properties.sku.name}" \
+  -o table
